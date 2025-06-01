@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaSave - Baixar Reels do Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --dark: #0f172a;
+            --darker: #020617;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--darker);
+            color: #e2e8f0;
+            background-image: 
+                radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
+            background-size: 30px 30px;
+            min-height: 100vh;
+        }
+        
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .rounded-button {
+            border-radius: 12px;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .modal {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal.active {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .download-btn {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            transition: all 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+        
+        .video-container {
+            aspect-ratio: 9/16;
+            max-height: 80vh;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 glass shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                    <i class="ri-instagram-line text-white text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold gradient-text">InstaSave</h1>
+            </div>
+            
+            <nav class="hidden md:flex space-x-8">
+                <a href="#inicio" class="text-gray-300 hover:text-white transition-colors duration-200">Início</a>
+                <a href="#como-funciona" class="text-gray-300 hover:text-white transition-colors duration-200">Como funciona</a>
+                <a href="#recursos" class="text-gray-300 hover:text-white transition-colors duration-200">Recursos</a>
+                <a href="#desenvolvedor" class="text-gray-300 hover:text-white transition-colors duration-200">Desenvolvedor</a>
+            </nav>
+            
+            <button id="menuBtn" class="md:hidden text-gray-300 hover:text-white transition-colors duration-200">
+                <i class="ri-menu-line text-2xl"></i>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="fixed inset-0 z-40 bg-black/90 backdrop-blur-md hidden md:hidden">
+        <div class="container mx-auto px-4 py-6 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-12">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                        <i class="ri-download-2-line text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-bold gradient-text">InstaSave</h1>
+                </div>
+                <button id="closeMenuBtn" class="text-gray-300 hover:text-white transition-colors duration-200">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+            
+            <nav class="flex flex-col space-y-6 text-center">
+                <a href="#inicio" class="text-xl text-gray-300 hover:text-white transition-colors duration-200 mobile-link">Início</a>
+                <a href="#como-funciona" class="text-xl text-gray-300 hover:text-white transition-colors duration-200 mobile-link">Como funciona</a>
+                <a href="#recursos" class="text-xl text-gray-300 hover:text-white transition-colors duration-200 mobile-link">Recursos</a>
+                <a href="#desenvolvedor" class="text-xl text-gray-300 hover:text-white transition-colors duration-200 mobile-link">Desenvolvedor</a>
+            </nav>
+            
+            <div class="mt-auto pt-12 text-center">
+                <p class="text-gray-400">InstaSave 2025 — Uma plataforma pensada para você.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Hero Section -->
+        <section id="inicio" class="py-12 md:py-20">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-12 md:mb-0 slide-in">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                        Baixe <span class="gradient-text">Reels do Instagram</span> com qualidade HD
+                    </h1>
+                    <p class="text-lg text-gray-300 mb-8">
+                        O InstaSave permite que você baixe vídeos do Instagram de forma rápida, fácil e gratuita. 
+                        Sem necessidade de login ou instalação de aplicativos.
+                    </p>
+                    
+                    <div class="max-w-xl">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="videoUrl" 
+                                placeholder="Cole o link do Reel aqui..." 
+                                class="w-full bg-gray-900 border border-gray-700 rounded-button py-4 px-6 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            >
+                            <button 
+                                id="downloadBtn" 
+                                class="absolute right-2 top-1/2 -translate-y-1/2 download-btn text-white py-2 px-6 rounded-button flex items-center space-x-2"
+                            >
+                                <span>Baixar</span>
+                                <i class="ri-download-line"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-400 mt-2">
+                            Exemplo: https://www.instagram.com/reel/CxYz123AbC/
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="md:w-1/2 flex justify-center fade-in">
+                    <div class="relative">
+                        <div class="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-3xl overflow-hidden border-2 border-primary/30 shadow-xl">
+                            <video src="https://d.rapidcdn.app/v2?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJodHRwczovL3Njb250ZW50LWFtczItMS5jZG5pbnN0YWdyYW0uY29tL28xL3YvdDE2L2YyL204Ni9BUU5JTlNzR0p0WUVjNFo4UnFDRnh5UTRfNUV4dm14c2VpOU5hcjhKcy1HMjBzeW9vV0dZZzk5X0pOWjl0cV92eVFhRW9ZZG00Ti1wR1YzQ0J2MUVQeEM4VEFMNGdmY1UzZk43TlN3Lm1wND9zdHA9ZHN0LW1wNCZlZmc9ZXlKeFpWOW5jbTkxY0hNaU9pSmJYQ0pwWjE5M1pXSmZaR1ZzYVhabGNubGZkblJ6WDI5MFpsd2lYU0lzSW5abGJtTnZaR1ZmZEdGbklqb2lkblJ6WDNadlpGOTFjbXhuWlc0dVkyeHBjSE11WXpJdU16WXdMbUpoYzJWc2FXNWxJbjAmX25jX2NhdD0xMDgmdnM9MTA3NTI5NDIzNDE5Mjk1N18xNDI5MzM0NTQyJl9uY192cz1IQmtzRlFJWVVtbG5YM2h3ZGw5eVpXVnNjMTl3WlhKdFlXNWxiblJmYzNKZmNISnZaQzh4UXpSR09VVkJSakJETkRaRE56VXdNVEpFTVRJME1VRTFNMEpHTVVWQk5GOTJhV1JsYjE5a1lYTm9hVzVwZEM1dGNEUVZBQUxJQVJJQUZRSVlPbkJoYzNOMGFISnZkV2RvWDJWMlpYSnpkRzl5WlM5SFFucFJjMEoxVEZObmNrbGhhVUZIUVUxcldta3RjM2xRTkVsUlluRmZSVUZCUVVZVkFnTElBUklBS0FBWUFCc0FGUUFBSnNxM2thT05oNDlBRlFJb0FrTXpMQmRBTFBYQ2oxd285aGdTWkdGemFGOWlZWE5sYkdsdVpWOHpYM1l4RVFCMSUyRmdkbDVwMEJBQSUzRCUzRCZjY2I9OS00Jm9oPTAwX0FmSTM1dzBlaHdwN0Vkc25DUmdfV21wb18zY0djQlRLUXBwVDRrVnJuUU5FdEEmb2U9NjgzRDhFQTQmX25jX3NpZD0xMGQxM2IiLCJmaWxlbmFtZSI6InNuYXBzYXZlLWFwcF8zNDg2NzY0MzU4ODc1NjUyNDgwLm1wNCIsImhlYWRlcnMiOnsidXNlci1hZ2VudCI6IlRlbGVncmFtQm90IChsaWtlIFR3aXR0ZXJCb3QpIn0sImlhdCI6MTc0ODc0NDg2M30._bSTkdVYmLRMgkeMJinIGuaU_5BR7EP6Bn2s9kyT7jE&dl=1&dl=1" autoplay loop muted class="w-full h-full object-cover"></video>
+                        </div>
+                        <div class="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-primary/20 backdrop-blur-md flex items-center justify-center pulse">
+                            <div class="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+                                <i class="ri-download-line text-white text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Result Section (Initially Hidden) -->
+        <section id="resultSection" class="hidden py-12">
+            <div class="glass rounded-2xl p-6 md:p-8 max-w-4xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold gradient-text">Seu vídeo está pronto!</h2>
+                    <button id="newDownloadBtn" class="text-gray-300 hover:text-white transition-colors duration-200 flex items-center space-x-1">
+                        <i class="ri-refresh-line"></i>
+                        <span>Novo download</span>
+                    </button>
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="md:w-1/2">
+                        <div class="video-container bg-black rounded-xl overflow-hidden">
+                            <video id="resultVideo" controls class="w-full h-full object-contain"></video>
+                        </div>
+                    </div>
+                    
+                    <div class="md:w-1/2">
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-2">Informações do vídeo</h3>
+                            <div class="bg-gray-900 rounded-xl p-4">
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
+                                        <img id="creatorAvatar" src="" alt="Criador" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <p id="creatorName" class="font-medium"></p>
+                                        <p class="text-sm text-gray-400">Criador do conteúdo</p>
+                                    </div>
+                                </div>
+                                <p id="videoCaption" class="text-gray-300 mb-4"></p>
+                                <div class="flex justify-between text-sm text-gray-400">
+                                    <div class="flex items-center space-x-1">
+                                        <i class="ri-heart-line"></i>
+                                        <span id="likeCount">0</span>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <i class="ri-chat-1-line"></i>
+                                        <span id="commentCount">0</span>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <i class="ri-share-line"></i>
+                                        <span id="shareCount">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Opções de download</h3>
+                            <div class="space-y-3">
+                                <button id="downloadVideoBtn" class="w-full download-btn text-white py-3 px-6 rounded-button flex items-center justify-between">
+                                    <span>Baixar vídeo</span>
+                                    <i class="ri-download-line"></i>
+                                </button>
+                                <button id="copyLinkBtn" class="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 px-6 rounded-button flex items-center justify-between transition-colors duration-200">
+                                    <span>Copiar link</span>
+                                    <i class="ri-link"></i>
+                                </button>
+                                <button id="shareBtn" class="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 px-6 rounded-button flex items-center justify-between transition-colors duration-200">
+                                    <span>Compartilhar</span>
+                                    <i class="ri-share-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Loading Section (Initially Hidden) -->
+        <section id="loadingSection" class="hidden py-20">
+            <div class="glass rounded-2xl p-12 max-w-md mx-auto text-center">
+                <div class="flex justify-center mb-6">
+                    <div class="loading-spinner"></div>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Processando seu vídeo...</h2>
+                <p class="text-gray-300">Estamos baixando o conteúdo do Instagram. Isso pode levar alguns segundos.</p>
+                <div class="mt-6 bg-gray-900 rounded-full h-2 w-full overflow-hidden">
+                    <div id="progressBar" class="bg-primary h-full rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Error Section (Initially Hidden) -->
+        <section id="errorSection" class="hidden py-20">
+            <div class="glass rounded-2xl p-8 max-w-md mx-auto text-center">
+                <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="ri-close-line text-red-500 text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Ocorreu um erro</h2>
+                <p id="errorMessage" class="text-gray-300 mb-6">Não foi possível baixar o vídeo. Verifique o link e tente novamente.</p>
+                <button id="tryAgainBtn" class="download-btn text-white py-2 px-6 rounded-button">
+                    Tentar novamente
+                </button>
+            </div>
+        </section>
+        
+        <!-- How It Works Section -->
+        <section id="como-funciona" class="py-12 md:py-20">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Como funciona</h2>
+                <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+                    Baixar vídeos do Instagram nunca foi tão fácil. Veja como usar o InstaSave em apenas 3 passos.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div class="glass rounded-2xl p-6 text-center slide-in" style="animation-delay: 0.1s">
+                    <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                            <i class="ri-link text-white text-xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">1. Copie o link</h3>
+                    <p class="text-gray-300">
+                        Abra o Instagram, encontre o Reel que deseja baixar e copie o link compartilhando o vídeo.
+                    </p>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 text-center slide-in" style="animation-delay: 0.2s">
+                    <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                            <i class="ri-file-upload-line text-white text-xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">2. Cole no InstaSave</h3>
+                    <p class="text-gray-300">
+                        Volte para o InstaSave e cole o link do Reel no campo indicado acima.
+                    </p>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 text-center slide-in" style="animation-delay: 0.3s">
+                    <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                            <i class="ri-download-line text-white text-xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">3. Baixe seu vídeo</h3>
+                    <p class="text-gray-300">
+                        Clique em "Baixar" e aguarde alguns segundos. Seu vídeo estará pronto para salvar!
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features Section -->
+        <section id="recursos" class="py-12 md:py-20 bg-gradient-to-b from-gray-900/50 to-transparent">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Recursos incríveis</h2>
+                <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+                    Descubra por que o InstaSave é o melhor downloader de Reels do Instagram
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                <div class="glass rounded-2xl p-6 flex items-start space-x-4 fade-in" style="animation-delay: 0.1s">
+                    <div class="w-12 h-12 bg-primary/20 rounded-xl flex-shrink-0 flex items-center justify-center">
+                        <i class="ri-zip-line text-primary text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Qualidade HD</h3>
+                        <p class="text-gray-300">
+                            Baixe vídeos na mais alta qualidade disponível, sem perda de resolução.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 flex items-start space-x-4 fade-in" style="animation-delay: 0.2s">
+                    <div class="w-12 h-12 bg-primary/20 rounded-xl flex-shrink-0 flex items-center justify-center">
+                        <i class="ri-flashlight-line text-primary text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Super rápido</h3>
+                        <p class="text-gray-300">
+                            Processamento ultrarrápido para que você tenha seu vídeo em segundos.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 flex items-start space-x-4 fade-in" style="animation-delay: 0.3s">
+                    <div class="w-12 h-12 bg-primary/20 rounded-xl flex-shrink-0 flex items-center justify-center">
+                        <i class="ri-shield-keyhole-line text-primary text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">100% seguro</h3>
+                        <p class="text-gray-300">
+                            Não armazenamos seus dados ou vídeos. Totalmente privado e seguro.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 flex items-start space-x-4 fade-in" style="animation-delay: 0.4s">
+                    <div class="w-12 h-12 bg-primary/20 rounded-xl flex-shrink-0 flex items-center justify-center">
+                        <i class="ri-smartphone-line text-primary text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Multiplataforma</h3>
+                        <p class="text-gray-300">
+                            Funciona em qualquer dispositivo: celular, tablet ou computador.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 flex items-start space-x-4 fade-in" style="animation-delay: 0.5s">
+                    <div class="w-12 h-12 bg-primary/20 rounded-xl flex-shrink-0 flex items-center justify-center">
+                        <i class="ri-money-dollar-circle-line text-primary text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Totalmente grátis</h3>
+                        <p class="text-gray-300">
+                            Sem custos, sem assinaturas, sem limites. Use quantas vezes quiser.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-2xl p-6 flex items-start space-x-4 fade-in" style="animation-delay: 0.6s">
+                    <div class="w-12 h-12 bg-primary/20 rounded-xl flex-shrink-0 flex items-center justify-center">
+                        <i class="ri-user-3-line text-primary text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Sem login</h3>
+                        <p class="text-gray-300">
+                            Não precisa de conta no Instagram ou cadastro no nosso site.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Stats Section -->
+        <section class="py-12 md:py-20">
+            <div class="glass rounded-2xl p-8 md:p-12 max-w-6xl mx-auto">
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div class="fade-in" style="animation-delay: 0.1s">
+                        <div class="text-4xl md:text-5xl font-bold gradient-text mb-2">
+                            <span id="totalDownloads">10K</span>+
+                        </div>
+                        <p class="text-gray-300">Downloads realizados</p>
+                    </div>
+                    
+                    <div class="fade-in" style="animation-delay: 0.2s">
+                        <div class="text-4xl md:text-5xl font-bold gradient-text mb-2">
+                            <span id="happyUsers">98</span>%
+                        </div>
+                        <p class="text-gray-300">Taxa de satisfação</p>
+                    </div>
+                    
+                    <div class="fade-in" style="animation-delay: 0.3s">
+                        <div class="text-4xl md:text-5xl font-bold gradient-text mb-2">
+                            <span id="videoCount">50K</span>+
+                        </div>
+                        <p class="text-gray-300">Vídeos disponibilizados</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- FAQ Section -->
+        <section class="py-12 md:py-20 max-w-4xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Perguntas frequentes</h2>
+                <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+                    Tire suas dúvidas sobre o InstaSave
+                </p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="glass rounded-xl p-6">
+                    <button class="faq-toggle w-full flex justify-between items-center text-left">
+                        <h3 class="text-lg font-semibold">É seguro usar o InstaSave?</h3>
+                        <i class="ri-arrow-down-s-line text-xl transition-transform duration-200"></i>
+                    </button>
+                    <div class="faq-content mt-4 hidden">
+                        <p class="text-gray-300">
+                            Sim, totalmente seguro! Não armazenamos seus dados pessoais nem os vídeos que você baixa. 
+                            Todo o processo é feito de forma anônima e os vídeos são deletados de nossos servidores após o download.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-xl p-6">
+                    <button class="faq-toggle w-full flex justify-between items-center text-left">
+                        <h3 class="text-lg font-semibold">Preciso pagar para usar?</h3>
+                        <i class="ri-arrow-down-s-line text-xl transition-transform duration-200"></i>
+                    </button>
+                    <div class="faq-content mt-4 hidden">
+                        <p class="text-gray-300">
+                            Não! O InstaSave é completamente gratuito e sem limites de uso. Você pode baixar quantos vídeos quiser 
+                            sem custo algum e sem necessidade de assinatura.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-xl p-6">
+                    <button class="faq-toggle w-full flex justify-between items-center text-left">
+                        <h3 class="text-lg font-semibold">Posso baixar vídeos privados?</h3>
+                        <i class="ri-arrow-down-s-line text-xl transition-transform duration-200"></i>
+                    </button>
+                    <div class="faq-content mt-4 hidden">
+                        <p class="text-gray-300">
+                            Não, o InstaSave só funciona com vídeos públicos do Instagram. Por questões de privacidade e termos de serviço, 
+                            não é possível baixar conteúdo de contas privadas.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-xl p-6">
+                    <button class="faq-toggle w-full flex justify-between items-center text-left">
+                        <h3 class="text-lg font-semibold">Como posso entrar em contato?</h3>
+                        <i class="ri-arrow-down-s-line text-xl transition-transform duration-200"></i>
+                    </button>
+                    <div class="faq-content mt-4 hidden">
+                        <p class="text-gray-300">
+                            Você pode nos contatar através da seção "Desenvolvedor" abaixo. Estamos sempre abertos a feedbacks, 
+                            sugestões e relatos de problemas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Desenvolvedor Section -->
+        <section id="desenvolvedor" class="glass rounded-2xl p-8 my-12 md:my-20 text-center max-w-2xl mx-auto">
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16 flex items-center justify-center mb-6 bg-primary/20 rounded-xl">
+                    <i class="ri-code-line text-primary text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-8">Desenvolvedor</h2>
+                <div class="w-32 h-32 rounded-full overflow-hidden mb-6 border-4 border-primary/30">
+                    <img src="https://i.imgur.com/gi0h7c1.jpeg" alt="Ramon" class="w-full h-full object-cover">
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Ramon</h3>
+                <p class="text-gray-300 mb-6 max-w-md mx-auto">
+                    Desenvolvedor apaixonado por criar soluções incríveis que facilitam a vida das pessoas.
+                </p>
+                <button id="openModalBtn" class="download-btn text-white py-2 px-6 rounded-button transition-colors duration-200 cursor-pointer">
+                    Sobre mim
+                </button>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Modal -->
+    <div id="developerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="modalOverlay"></div>
+        <div class="modal relative w-full max-w-md rounded-2xl p-6 transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <button id="closeModalBtn" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-primary/20 cursor-pointer">
+                <i class="ri-close-line text-lg"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 border-4 border-primary/30">
+                    <img src="https://i.imgur.com/gi0h7c1.jpeg" alt="Ramon" class="w-full h-full object-cover">
+                </div>
+                <h3 class="text-2xl font-bold">Ramon</h3>
+                <p class="text-primary">Desenvolvedor Full Stack</p>
+            </div>
+            <p class="text-gray-300 mb-8 text-center">
+                Ramon, o dev que jura ser o melhor (ninguém confirma, mas vai contrariar?). Vive colado na IA, cria sites incríveis e faz tudo parecer fácil. Dizem que é só arrogância… até verem o resultado.
+            </p>
+            <div class="flex justify-center space-x-4">
+                <a href="#" class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/20 hover:bg-primary/30 transition-colors duration-200 cursor-pointer">
+                    <i class="ri-github-fill text-xl"></i>
+                </a>
+                <a href="#" class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/20 hover:bg-primary/30 transition-colors duration-200 cursor-pointer">
+                    <i class="ri-linkedin-fill text-xl"></i>
+                </a>
+                <a href="#" class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/20 hover:bg-primary/30 transition-colors duration-200 cursor-pointer">
+                    <i class="ri-mail-fill text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-900/50 border-t border-gray-800 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <i class="ri-download-2-line text-white text-sm"></i>
+                    </div>
+                    <h2 class="text-lg font-bold gradient-text">InstaSave</h2>
+                </div>
+                
+                <div class="flex space-x-6 mb-4 md:mb-0">
+                    <a href="#inicio" class="text-gray-300 hover:text-white transition-colors duration-200">Início</a>
+                    <a href="#como-funciona" class="text-gray-300 hover:text-white transition-colors duration-200">Como funciona</a>
+                    <a href="#recursos" class="text-gray-300 hover:text-white transition-colors duration-200">Recursos</a>
+                    <a href="#desenvolvedor" class="text-gray-300 hover:text-white transition-colors duration-200">Desenvolvedor</a>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200">
+                        <i class="ri-instagram-line text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200">
+                        <i class="ri-twitter-x-line text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200">
+                        <i class="ri-telegram-line text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>InstaSave 2025 — Uma plataforma pensada para você.</p>
+                <p class="text-sm mt-2">Não afiliado ao Instagram ou Meta.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Floating Action Button (Mobile) -->
+    <div class="fixed bottom-6 right-6 md:hidden z-40">
+        <button id="scrollTopBtn" class="w-12 h-12 flex items-center justify-center rounded-full bg-primary shadow-lg cursor-pointer transform transition-transform hover:scale-105 opacity-0">
+            <i class="ri-arrow-up-line text-white text-xl"></i>
+        </button>
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile Menu
+            const menuBtn = document.getElementById('menuBtn');
+            const closeMenuBtn = document.getElementById('closeMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileLinks = document.querySelectorAll('.mobile-link');
+            
+            menuBtn.addEventListener('click', function() {
+                mobileMenu.classList.remove('hidden');
+            });
+            
+            closeMenuBtn.addEventListener('click', function() {
+                mobileMenu.classList.add('hidden');
+            });
+            
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+            
+            // Modal
+            const openModalBtn = document.getElementById('openModalBtn');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const developerModal = document.getElementById('developerModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            function openModal() {
+                developerModal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+            
+            function closeModal() {
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    developerModal.classList.add('hidden');
+                }, 300);
+            }
+            
+            openModalBtn.addEventListener('click', openModal);
+            closeModalBtn.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', closeModal);
+            
+            // FAQ Toggle
+            const faqToggles = document.querySelectorAll('.faq-toggle');
+            
+            faqToggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    const icon = this.querySelector('i');
+                    
+                    content.classList.toggle('hidden');
+                    icon.classList.toggle('rotate-180');
+                });
+            });
+            
+            // Scroll to Top Button
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    scrollTopBtn.classList.remove('opacity-0');
+                    scrollTopBtn.classList.add('opacity-100');
+                } else {
+                    scrollTopBtn.classList.remove('opacity-100');
+                    scrollTopBtn.classList.add('opacity-0');
+                }
+            });
+            
+            scrollTopBtn.addEventListener('click', function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // Smooth scroll for all anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        const navbarHeight = 60;
+                        const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
+                        
+                        window.scrollTo({
+                            top: targetPosition,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+            
+            // Animated Stats
+            function animateValue(id, start, end, duration) {
+                const obj = document.getElementById(id);
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    let value;
+                    
+                    if (id === 'happyUsers') {
+                        value = Math.floor(progress * (end - start) + start);
+                        obj.innerHTML = value;
+                    } else {
+                        value = Math.floor(progress * (end - start) + start);
+                        
+                        if (value >= 1000) {
+                            obj.innerHTML = (value / 1000).toFixed(1) + 'K';
+                        } else {
+                            obj.innerHTML = value;
+                        }
+                    }
+                    
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+            
+            // Start animations when stats come into view
+            const statsSection = document.querySelector('.glass.rounded-2xl');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateValue('totalDownloads', 0, 10500, 2000);
+                        animateValue('happyUsers', 0, 98, 1500);
+                        animateValue('videoCount', 0, 52000, 2500);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            if (statsSection) {
+                observer.observe(statsSection);
+            }
+            
+            // Download Functionality
+            const downloadBtn = document.getElementById('downloadBtn');
+            const videoUrl = document.getElementById('videoUrl');
+            const resultSection = document.getElementById('resultSection');
+            const loadingSection = document.getElementById('loadingSection');
+            const errorSection = document.getElementById('errorSection');
+            const newDownloadBtn = document.getElementById('newDownloadBtn');
+            const tryAgainBtn = document.getElementById('tryAgainBtn');
+            const resultVideo = document.getElementById('resultVideo');
+            const creatorName = document.getElementById('creatorName');
+            const creatorAvatar = document.getElementById('creatorAvatar');
+            const videoCaption = document.getElementById('videoCaption');
+            const likeCount = document.getElementById('likeCount');
+            const commentCount = document.getElementById('commentCount');
+            const shareCount = document.getElementById('shareCount');
+            const downloadVideoBtn = document.getElementById('downloadVideoBtn');
+            const copyLinkBtn = document.getElementById('copyLinkBtn');
+            const shareBtn = document.getElementById('shareBtn');
+            const progressBar = document.getElementById('progressBar');
+            
+            let currentVideoUrl = '';
+            let currentVideoData = null;
+            
+            downloadBtn.addEventListener('click', async function() {
+                const url = videoUrl.value.trim();
+                
+                if (!url) {
+                    showError('Por favor, cole o link do Reel do Instagram');
+                    return;
+                }
+                
+                if (!url.includes('instagram.com/reel/') && !url.includes('instagram.com/p/')) {
+                    showError('Por favor, insira um link válido do Instagram');
+                    return;
+                }
+                
+                startDownload(url);
+            });
+            
+            newDownloadBtn.addEventListener('click', function() {
+                resultSection.classList.add('hidden');
+                videoUrl.value = '';
+                videoUrl.focus();
+            });
+            
+            tryAgainBtn.addEventListener('click', function() {
+                errorSection.classList.add('hidden');
+                startDownload(videoUrl.value);
+            });
+            
+            async function startDownload(url) {
+                loadingSection.classList.remove('hidden');
+                resultSection.classList.add('hidden');
+                errorSection.classList.add('hidden');
+                
+                // Simulate progress bar
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 10;
+                    if (progress > 90) progress = 90;
+                    progressBar.style.width = `${progress}%`;
+                }, 300);
+                
+                try {
+                    // In a real scenario, you would call your API here
+                    // For demo purposes, we'll simulate the API response
+                    const apiUrl = `https://yuxinze-apis.onrender.com/download/instagram/v2?&url=${encodeURIComponent(url)}`;
+                    
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    
+                    if (!data.status) {
+                        throw new Error('Não foi possível baixar o vídeo');
+                    }
+                    
+                    currentVideoData = data;
+                    currentVideoUrl = data.resultado.video[0];
+                    
+                    // Update UI with video data
+resultVideo.src = currentVideoUrl;
+creatorName.textContent = 'VipCoringa';
+                    creatorAvatar.src = data.resultado.thumbnail[0] || 'https://i.imgur.com/gi0h7c1.jpeg';
+                    videoCaption.textContent = 'Vídeo baixado do Instagram via InstaSave';
+                    
+                    // Simulate random stats
+                    likeCount.textContent = Math.floor(Math.random() * 5000).toLocaleString();
+                    commentCount.textContent = Math.floor(Math.random() * 500).toLocaleString();
+                    shareCount.textContent = Math.floor(Math.random() * 1000).toLocaleString();
+                    
+                    // Complete progress bar
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    
+                    // Show result after a small delay
+                    setTimeout(() => {
+                        loadingSection.classList.add('hidden');
+                        resultSection.classList.remove('hidden');
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error('Download error:', error);
+                    clearInterval(interval);
+                    loadingSection.classList.add('hidden');
+                    showError('Ocorreu um erro ao baixar o vídeo. Verifique o link e tente novamente.');
+                }
+            }
+            
+            function showError(message) {
+                errorSection.classList.remove('hidden');
+                document.getElementById('errorMessage').textContent = message;
+            }
+            
+            // Download video button
+            downloadVideoBtn.addEventListener('click', function() {
+                if (!currentVideoUrl) return;
+                
+                const a = document.createElement('a');
+                a.href = currentVideoUrl;
+                a.download = `instasave-${Date.now()}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+            
+            // Copy link button
+            copyLinkBtn.addEventListener('click', function() {
+                if (!currentVideoUrl) return;
+                
+                navigator.clipboard.writeText(currentVideoUrl)
+                    .then(() => {
+                        const originalText = copyLinkBtn.querySelector('span').textContent;
+                        copyLinkBtn.querySelector('span').textContent = 'Copiado!';
+                        
+                        setTimeout(() => {
+                            copyLinkBtn.querySelector('span').textContent = originalText;
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy:', err);
+                    });
+            });
+            
+            // Share button
+            shareBtn.addEventListener('click', function() {
+                if (!currentVideoUrl) return;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Vídeo do Instagram baixado via InstaSave',
+                        text: 'Confira este vídeo que baixei do Instagram usando o InstaSave',
+                        url: currentVideoUrl,
+                    })
+                    .catch(err => {
+                        console.error('Error sharing:', err);
+                    });
+                } else {
+                    // Fallback for browsers that don't support Web Share API
+                    navigator.clipboard.writeText(currentVideoUrl)
+                        .then(() => {
+                            const originalText = shareBtn.querySelector('span').textContent;
+                            shareBtn.querySelector('span').textContent = 'Link copiado!';
+                            
+                            setTimeout(() => {
+                                shareBtn.querySelector('span').textContent = originalText;
+                            }, 2000);
+                        })
+                        .catch(err => {
+                            console.error('Failed to copy:', err);
+                        });
+                }
+            });
+            
+            // Allow pressing Enter in the input field
+            videoUrl.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    downloadBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
